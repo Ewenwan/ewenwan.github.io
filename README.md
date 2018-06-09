@@ -1,4 +1,4 @@
-# 我的个人主页[www.wanyouwen.tech](www.wanyouwen.tech)
+# 我的个人主页[wanyouwen.tech](http://wanyouwen.tech/)
 
 建站相关信息请见[GitHub Pages+Jekyll搭建个人博客](http://www.weixinyu.info/2017/08/GitHub-Pages+Jekyll%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/). 
 
@@ -13,4 +13,4 @@
 
 ### 感谢   
 
-本博客在[weixinyu](https://github.com/weixinyu/weixinyu.github.io)基础上修改。  
+本博客在[slowlythinking](https://github.com/slowlythinking/slowlythinking.github.io)基础上修改。  

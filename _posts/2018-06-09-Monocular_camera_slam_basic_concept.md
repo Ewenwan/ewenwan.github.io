@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "如何处理负面情绪"
+title: "单目SLAM基础知识"
 date: 2018-06-09 
-description: "负面情绪，理性，人生"
-tag: 生活 
+description: "特征点匹配，单应变换，对极几何，本质矩阵"
+tag: SLAM 
 ---   
 
 # 特征点匹配

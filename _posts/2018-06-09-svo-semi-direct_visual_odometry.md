@@ -8,6 +8,8 @@ tag: SLAM
 
 # svo： semi-direct visual odometry 半直接视觉里程计
 
+[本文github链接](https://github.com/Ewenwan/MVision/tree/master/vSLAM/svo_slam)
+
 [svo： semi-direct visual odometry 论文解析](https://blog.csdn.net/heyijia0327/article/details/51083398)
 
 [SVO原理解析](http://www.cnblogs.com/luyb/p/5773691.html)

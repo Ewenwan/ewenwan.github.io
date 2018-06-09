@@ -1,6 +1,6 @@
 # Basic 网站首页基本参数配置
 title: 万有文
-subtitle: 个人站
+subtitle: 个人博客
 description: 欢迎来到我的个人站~
 # 头像里面的标题
 avatarTitle: EwenWan
@@ -16,9 +16,10 @@ disqus_username: wanyouwen
 
 # Social 社交账号
 social:
-    weibo: 2072187723 
+    weibo: 2986992120
     github: ewenwan
-    # twitter: 
+    # twitter:
+    csdn: xiaoxiaowenqiang
     mail: 1756429307y@qq.com
 
 # 百度统计 

@@ -49,7 +49,10 @@ tag: SLAM
          p2 = K( RP + t)  = KTP = H21 * KP  
          T =  K 逆 * H21*K      
 ```
-# 本质矩阵F求解 变换矩阵[R t]   p2转置 * F * p1 =  0 
+# 本质矩阵F求解 变换矩阵[R t]   p2转置 * F * p1 =  0
+
+[参考](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-A11-VisualOdometry.pdf)
+
 ## 基本矩阵的获得
 ```asm
         空间点 P  两相机 像素点对  p1  p2 两相机 归一化平面上的点对 x1 x2 与P点对应

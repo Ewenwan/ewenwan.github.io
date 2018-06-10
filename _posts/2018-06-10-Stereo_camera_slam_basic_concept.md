@@ -5,6 +5,8 @@ date: 2018-06-10
 description: "双目 校准 立体视觉 PnP算法 ICP算法 RANSAC算法 LM算法"
 tag: SLAM 
 ---   
+[本文github地址](https://github.com/Ewenwan/ewenwan.github.io/blob/master/_posts/2018-06-10-Stereo_camera_slam_basic_concept.md)
+
 # 双目slam基础 Stereo camera slam
 [Stereo Vision:Algorithms and Applications 双目宝典](http://vision.deis.unibo.it/~smatt/Seminars/StereoVision.pdf)
 

@@ -26,7 +26,7 @@ tag: SLAM
 **内参数K**
 ![](https://github.com/Ewenwan/MVision/blob/master/vSLAM/img/in.PNG)
 
-```asm
+
     u         x     fx  0  cx
     v  =  K * y  =  0   fy cy   
     1         z     0   0   1
@@ -88,7 +88,8 @@ tag: SLAM
       0., 1., 0., -2.3086411857604980e+02, 
       0., 0., 0., 3.9018919929094244e+02, 
       0., 0., 6.1428092115522364e-04, 0. ]
-```
+
+
 ### 相机畸变参数  Extrinsic parameters
 
      r^2 = x^2+y^2
@@ -101,13 +102,13 @@ tag: SLAM
      * Yp=Yd + ( p1 * (r^2 + 2 * y^2) + 2 * p2 * x )
 ## 1. 双目相机校正Stereo Rectification 
 [opencv双目校准 程序参考](https://github.com/Ewenwan/MVision/blob/master/stereo/stereo/stereo_calib.cpp)
-```asm
+
     相对位置矩阵：
         R t 为 左相机到右相机 的 旋转与平移矩阵  
             R维度：3*3     
             t维度：3*1  
             t中第一个tx为 双目基线长度 
-        
+
     摆正矩阵:   
         立体校正的时候需要两幅图像共面并且 行对准 以使得立体匹配更加的可靠 
         使得两幅图像共面的方法就是把两个摄像头的图像投影到一个 公共成像面上，
@@ -118,16 +119,17 @@ tag: SLAM
     投影矩阵：
         其中Pl,Pr为两个相机的投影矩阵，
         其作用是将3D点的坐标转换到图像的2D点的坐标:
-        
+
             P*[X Y Z 1]' =[x y w]  
     重投影矩阵(视差转深度矩阵)：
      Q矩阵为重投影矩阵(视差转深度矩阵)，
      即矩阵Q可以把2维平面(图像平面)上的点投影到3维空间的点:
-     
+
         Q*[x y d 1] = [X Y Z W]。
-        
+
     其中d为左右两幅图像的视差. 
-```
+
+
 ![](https://github.com/Ewenwan/MVision/blob/master/vSLAM/img/1_Stereo_standard_form.PNG)
 
 
@@ -243,29 +245,29 @@ tag: SLAM
 ## 4. 三角测量得到深度 Triangulation 
 
 ![相似三角形 三角化](https://github.com/Ewenwan/MVision/blob/master/vSLAM/img/3_Triangulation.PNG)
-```asm
-    上图中，三角形 P OR OT 相似于 三角形 P p p'
-    更加相似三角形的对应边成比例定理：
-    OR OT/ PX  = p p'/ PZ
-    换成长度：
-    B/Z  = (B+Xt-Xr) / (Z - f)
-        B为基线长度值
-        Z为点P的深度值
-        f为相机焦距值
-        Xr，Xt 为两幅图的匹配点坐标，Xr-Xt 为匹配点视差d
-    化简可以得到：
-    Z = B*f/(Xr-Xt) = B*f/d
 
-    又有 三角形 OR cx p 相似于 三角形 P X OR
-    得到：
-    OR cx / p cx = P X / OR X
-    换成长度：
-    f/ (Xr - cx) = Z / X
-    得到 ：
-    X = Z/f * (Xr - cx)
-    同理：
-    Y = Z/f * (Yr - cy)
-```
+        上图中，三角形 P OR OT 相似于 三角形 P p p'
+        更加相似三角形的对应边成比例定理：
+        OR OT/ PX  = p p'/ PZ
+        换成长度：
+        B/Z  = (B+Xt-Xr) / (Z - f)
+            B为基线长度值
+            Z为点P的深度值
+            f为相机焦距值
+            Xr，Xt 为两幅图的匹配点坐标，Xr-Xt 为匹配点视差d
+        化简可以得到：
+        Z = B*f/(Xr-Xt) = B*f/d
+
+        又有 三角形 OR cx p 相似于 三角形 P X OR
+        得到：
+        OR cx / p cx = P X / OR X
+        换成长度：
+        f/ (Xr - cx) = Z / X
+        得到 ：
+        X = Z/f * (Xr - cx)
+        同理：
+        Y = Z/f * (Yr - cy)
+
 ![视差 与深度的关系](https://github.com/Ewenwan/MVision/blob/master/vSLAM/img/disparity_detp.PNG)
 
     由于 Z =  B*f/d，
@@ -320,57 +322,197 @@ tag: SLAM
 
 [光流场景流](http://www.cs.toronto.edu/~urtasun/courses/CSC2541/03_scene_flow.pdf)  
 **光流计算**
-```asm
-假设1：光照亮度恒定：
-                  I(x, y, t) =  I(x+dx, y+dy, t+dt) 
-                 泰勒展开：
-                  I(x+dx, y+dy, t+dt) =  
-                                        I(x, y, t) + dI/dx * dx + dI/dy * dy + dI/dt * dt
-                                      =  I(x, y, t) + Ix * dx  + Iy * dy + It * dt
-                 得到：
-                      Ix * dx  + Iy * dy + It * dt = 0
-                 因为 像素水平方向的运动速度 u=dx/dt,  像素垂直方向的运动速度 v=dy/dt
-                 等式两边同时除以 dt ,得到：
-                      Ix * dx/dt  + Iy * dy/dt + It = 0
-                      Ix * u  + Iy * v + It = 0
-                 写成矩阵形式：
-                      [Ix, Iy] * [u; v] = -It,  式中Ix, Iy为图像空间像素差值(梯度), It 为时间维度，像素差值
-           假设2：局部区域 运动相同
-                 对于点[x,y]附近的点[x1,y1]  [x2,y2]  , ... , [xn,yn]  都具有相同的速度 [u; v]
-                 有：
-                  [Ix1, Iy1;                      [It1
-                   Ix2, Iy2;                       It2
-                   ...               *  [u; v] = - ...
-                   Ixn, Iyn;]                      Itn]
-                 写成矩阵形式：
-                  A * U = b
-                 由两边同时左乘 A逆 得到：
-                  U = A逆 * b
-                 由于A矩阵的逆矩阵可能不存在，可以曲线救国改求其伪逆矩阵
-                  U = (A转置*A)逆 * A转置 * b
-           得到像素的水平和垂直方向速度以后，可以得到:
-               速度幅值： 
-                        V = sqrt(u^2 + v^2)
-               速度方向：Cet = arctan(v/u)      
-```
+
+        假设1：光照亮度恒定：
+              I(x, y, t) =  I(x+dx, y+dy, t+dt) 
+             泰勒展开：
+              I(x+dx, y+dy, t+dt) =  
+                                    I(x, y, t) + dI/dx * dx + dI/dy * dy + dI/dt * dt
+                                  =  I(x, y, t) + Ix * dx  + Iy * dy + It * dt
+             得到：
+                  Ix * dx  + Iy * dy + It * dt = 0
+             因为 像素水平方向的运动速度 u=dx/dt,  像素垂直方向的运动速度 v=dy/dt
+             等式两边同时除以 dt ,得到：
+                  Ix * dx/dt  + Iy * dy/dt + It = 0
+                  Ix * u  + Iy * v + It = 0
+             写成矩阵形式：
+                  [Ix, Iy] * [u; v] = -It,  式中Ix, Iy为图像空间像素差值(梯度), It 为时间维度，像素差值
+        假设2：局部区域 运动相同
+             对于点[x,y]附近的点[x1,y1]  [x2,y2]  , ... , [xn,yn]  都具有相同的速度 [u; v]
+             有：
+              [Ix1, Iy1;                      [It1
+               Ix2, Iy2;                       It2
+               ...               *  [u; v] = - ...
+               Ixn, Iyn;]                      Itn]
+             写成矩阵形式：
+              A * U = b
+             由两边同时左乘 A逆 得到：
+              U = A逆 * b
+             由于A矩阵的逆矩阵可能不存在，可以曲线救国改求其伪逆矩阵
+              U = (A转置*A)逆 * A转置 * b
+        得到像素的水平和垂直方向速度以后，可以得到:
+           速度幅值： 
+                    V = sqrt(u^2 + v^2)
+           速度方向：Cet = arctan(v/u)      
+
 
 ## 6. 姿态恢复/跟踪/随机采样序列 Incremental Pose Recovery/RANSAC 
+
 ![](https://github.com/Ewenwan/MVision/blob/master/vSLAM/img/transformation.PNG)
 
-    计算变换矩阵的初始解：
+## 计算变换矩阵的初始解：
     1、(单应变换/本质矩阵）求初始解
 [2d-2d变换求解算法(单应变换/本质矩阵) 单目里面有说过](https://github.com/Ewenwan/MVision/blob/master/vSLAM/%E5%8D%95%E7%9B%AEslam%E5%9F%BA%E7%A1%80.md)
 
-    2、3d-2d 匹配点对，使用PnP求解算法得到初始解：
 
-    3、3d-3d 匹配点对，使用ICP算法得到初始解：
+## 2、3d-2d 匹配点对，使用PnP算法/直接线性变换DLT(6个 3D - 2D 点对) 得到初始解：
+      a) 直接线性变换DLT:
+            2D点-3Ｄ点对
+            2d点通过内参数K 反变换到　归一化平面
+             (u，v，1) 
+            3d点其次表示　(X, Y, Z, 1) 
+            变换矩阵：　T = [R t; 0 0 0 1] 维度　3*4
+            s1为归一化尺度
+            s1 * (u，v，1) = T * (X, Y, Z, 1)  = T * P 
+            T = [t1 t2 t3 t4; 
+                 t5 t6 t7 t8; 
+                 t9 t10 t11 t12] = [T1; 
+                                    T2; 
+                                    T3]
+             可得到 u = T1 × P/(T3 * P)   
+                 v =  T2 × P/(T3 * P) 
+             移项可以得到:
+                   T3 * P *u - T1 * P =0 　 以及 
+                   T3 * P *v - T2 * P =0   
+                   每个3D - 2D 点对 可提供 两个约束
+       T有 12个变量 至少需要6个 3D - 2D 点对 
+       求解的 T的 左大半部分左上角３＊３
+       不一定满足旋转矩阵R的约束关系（正交矩阵），
+       得到 T后需要使用QR分解 使得得到的 T 满足 SE3
+       用一个旋转矩阵去近似（将3*3矩阵空间投影到SE(3)流形上）
 
+     b) PnP算法(P3P)，3点平面匹配: 
+       世界坐标系下的ABC三点和图像坐标系下的abc三点匹配;
+       其中AB，BC，AC的长度已知，<a,b>，<b,c>，<a,c>也是已知，
+       通过相似三角形余弦定理可以求出A，B，C在相机参考系中的3d坐标;
+       原来就知道A, B, C 三点在世界坐标系下的坐标，现在有知道它们在相机坐标系下的坐标，
+       进而可以转换成　3D-3D　点的匹配问题，使用 ICP算法求解       
+![](https://images2015.cnblogs.com/blog/457232/201706/457232-20170609104935043-417279462.png)
+
+## 3、3d-3d 匹配点对，使用ICP算法得到初始解：
+[ICP算法求解](https://www.cnblogs.com/sddai/p/6129437.html)
+
+        ICP：3D-3D点对求解变换矩阵
+          使得 P2 = R* P1 + t
+          线性代数求解  SVD奇异值分解方法
+          求解 R,t 使得误差    ei = P2 - (R*P1 + t)
+          利用最小二乘法求解最优解使：
+          最小化误差和 min (1/n * sum(ei^2))   ; 
+              e^2 = ei*ei转置
+          得到 R t 
+
+          先对平移向量T进行初始的估算，
+             1) 具体方法是分别得到点集P1和P2的中心：
+                 p1 = 1/n * sum(P1)
+                 p2 = 1/n * sum(P2)
+             2) 分别将点集P1和P2平移至中心点处：
+                 P1' = P1 - p1
+                 P2' = P2 - p2
+             3) 误差变为：　ei' = (P2'+p2) - (R*(P1'+p1) + t)
+               ei^2 =  (P1'- R*P2')^2 + (p2 - R*p1 - t)^2 
+             4) 求 (P1'- R*P2')^2最小 可以得到R 
+                 (P1' - R * P2')^2 = 
+                 P1'转置*P1' - 2*P1'转置*R*P2'  + P2'转置*R转置*R*P2'  
+                 第一项与R无关 第三项 应为  R转置* R = I 与R也无关
+                 只剩下第二项　- 2*P1'转置*R*P2' 
+                 我们计算 B = P1'转置*P2'
+                 原最优化问题可以转为求B的最小特征值和特征向量
+                 对B进行奇异值分解得到:
+                    B = U * 对角矩阵 * V转置  
+                    R= U * V转置 
+             5) 再求取转移矩阵t
+               由　  P2 = R* P1 + t
+                得到　t = P2 - R* P1     
     鲁棒优化：
     1、 使用RANSAC随机采样序列一致性算法
         随机采样一些点对求解，计算剩余点对的误差，统计好的点的数量，选择内点数量多的变换关系
+![](https://images2015.cnblogs.com/blog/1085343/201704/1085343-20170425210413772-331422274.png)
 
+## 2、最小二乘优化算法优化位置矩阵，使用误差加权的列文伯格马尔夸克算法W-LM更新位姿
 
-    2、最小二乘优化算法优化位置矩阵，使用误差加权的列文伯格马尔夸克算法W-LM更新位姿
+## 3D-2D点对匹配，最小化误差，求取误差函数对优化变量的偏导数，对优化变量进行更新
+
+         三维点  Pi = (Xi, Yi, Zi)   相机坐标 pi = (xi, yi, 1)  像素坐标 ci = (ui, vi)  
+         * 相机相对于  世界坐标系(第一帧图像相机) 的 旋转 平移矩阵 R t (变换矩阵 T　＝[R t]) 的 李代数形式 f   李群形式为 exp(f)
+         * si * [ui,vi,1] = K * T * Pi = K * exp(f) * Pi      这里 exp(f) * Pi  为 4*1维的需要为齐次表示 需要转换为 非齐次表示
+         * 重投影误差  e =  sum( [ ci 1 ] - 1/si * K * exp(f) * Pi )^2  ；   K * exp(f) * Pi 为三维点的重投影坐标
+         * 最小化重投影误差 得到 变换矩阵李代数形式 f  
+         * 由于  [ ci 1 ] 最后一个为1  误差约束e 为两个方程  而 f  为6个自由度  x1 x2 x3 x4 x5 x6
+         * 最小二乘优化 用于最小化一个函数   e(x + ∇x) = e(x)  +  J * ∇x
+         * 所以 雅克比矩阵 J 为 2*6的矩阵
+         * 
+         * 雅克比J的推导：
+         * si * [ ci 1 ] = K * T * Pi = K * exp(f) * Pi  = K * Pi'   Pi'为相机坐标系下的坐标  exp(f) * Pi  前三维 (Xi', Yi', Zi') 
+         *  s*u       [fx 0 cx       X'
+         *  s*v  =     0 fy cy  *    Y'
+         *   s         0 0  1]       Z'
+         *  利用第三行消去s(实际上就是 P'的深度) 
+         *  u = fx * X'/Z' + cx
+         *  v = fy * Y'/Z'  + cy 
+         * 
+         * [1]
+         *  我们对 变换矩阵 T的 李代数形式 f 左乘 扰动量 ∇f
+         e = [ ci 1 ] - 1/si * K * exp(f) * Pi 　＝　[ ci 1 ] - 1/si * K *　Pi'
+         *  误差e 对∇f的偏导数 =  e 对P'的偏导数 *  P'对∇f的偏导数
+         * 
+         * e 对P'的偏导数 = - [ u对X'的偏导数 u对Y'的偏导数 u对Z'的偏导数;
+         *                     v对X'的偏导数 v对Y'的偏导数  v对Z'的偏导数]  = - [ fx/Z'   0        -fx * X'/Z' ^2 
+         *                                                                      0       fy/Z'    -fy* Y'/Z' ^2]
+         *  P'对∇f的偏导数 = [ I  -P'叉乘矩阵]  3*6大小   平移在前  旋转在后
+         *  = [ 1 0  0   0   Z'   -Y' 
+         *      0 1  0  -Z'  0    X'
+         *      0 0  1   Y'  -X   0]
+         * 有向量 t = [ a1 a2 a3] 其
+         * 叉乘矩阵 = [0  -a3  a2;
+         *            a3  0  -a1; 
+         *           -a2  a1  0 ]  
+         * 
+         * 两者相乘得到  平移在前 旋转在后
+         * J = - [fx/Z'   0      -fx * X'/Z'^2   -fx * X'*Y'/Z' ^2      fx + fx * X'^2/Z'^2    -fx*Y'/Z'
+         *         0     fy/Z'   -fy* Y'/Z'^2    -fy -fy* Y'^2/Z'^2     fy * X'*Y'/Z'^2        fy*X'/Z'    ] 
+         * 如果是 旋转在前 平移在后 调换前三列  后三列 
+         // 旋转在前 平移在后   g2o 
+         * J =  [ fx *X'*Y'/Z'^2       -fx *(1 + X'^2/Z'^2)   fx*Y'/Z'  -fx/Z'   0       fx * X'/Z'^2 
+         *        fy *(1 + Y'^2/Z'^2)  -fy * X'*Y'/Z'^2       -fy*X'/Z'   0     -fy/Z'   fy* Y'/Z'^2     ] 
+
+         * [2] 优化变量为3D点坐标时Pi   
+          e = [ ci 1 ] - 1/si * K * exp(f) * Pi = [ ci 1 ] - 1/si * K *　Pi'
+         * e 对Pi的偏导数   = e 对Pi'的偏导数 *  Pi'对Pi的偏导数 = e 对P'的偏导数 * R
+         * P' = R * P + t
+         * P'对P的偏导数  = R
+
+         J = e 对P'的偏导数  * R
+           = - [ fx/Z'   0        -fx * X'/Z' ^2  *  R
+                  0       fy/Z'    -fy* Y'/Z' ^2]
+
+##   3. 3D-3D　非线性最小二乘优化
+        * ei = Pi - exp(f) * Pi'  = P - P‘ 李代数形式 的 变换矩阵 对误差求导 得到 迭代优化 梯度
+        * 误差有三维，而优化变量R,t，对应的李代数有６个变量
+        * 所有误差对变量的偏导数雅克比矩阵 维度为　3×6 误差  对应的导数来优化变量，更新的增量
+        * e 对 ∇f的导数  = P'对∇f的偏导数
+        *  P'对∇f的偏导数 = [ I  -P'叉乘矩阵] 3*6大小   平移在前  旋转在后
+        *  = [ 1 0  0  0   Z'   -Y' 
+        *      0 1  0  -Z' 0    X'
+        *      0 0  1  Y' -X   0]
+        * 旋转在前  平移在后
+        *  = [   0   Z'  -Y' 1 0  0 
+        *        -Z' 0    X' 0 1  0 
+        *        Y'  -X   0  0 0  1]
+        * 
+        * J = - P'对∇f的偏导数
+        *  = [   0   -Z'   Y'  -1  0  0 
+        *        Z'   0    -X'  0 -1  0 
+        *        -Y'  X’    0   0  0 -1]
 
 [稠密相机跟踪 误差雅克比矩阵求解 最小二乘优化求解](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-P12-DenseVO.pdf)
 

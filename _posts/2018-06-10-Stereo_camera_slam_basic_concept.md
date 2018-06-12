@@ -103,6 +103,9 @@ tag: SLAM
      * 切向畸变矫正 装配误差                         p1  p2  两个参数确定
      * Xp=Xd + ( 2 * p1 * y   +  p2 * (r^2 +2 * x^2) )
      * Yp=Yd + ( p1 * (r^2 + 2 * y^2) + 2 * p2 * x )
+     
+[相机畸变参考](https://blog.csdn.net/u011178262/article/details/74159480)
+
 ## 1. 双目相机校正Stereo Rectification 
 [opencv双目校准 程序参考](https://github.com/Ewenwan/MVision/blob/master/stereo/stereo/stereo_calib.cpp)
 

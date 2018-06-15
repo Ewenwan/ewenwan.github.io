@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "卡尔曼滤波"
-date: 2018-06-10 
+date: 2018-06-15 
 description: "卡尔曼滤波 高斯分布 系统状态方程 测量过程"
 tag: 数学
 ---   

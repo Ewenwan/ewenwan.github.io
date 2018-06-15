@@ -5,7 +5,7 @@ date: 2018-06-10
 description: "卡尔曼滤波 高斯分布 系统状态方程 测量过程"
 tag: 数学
 ---   
-[本文github地址]()
+[本文github地址](https://github.com/Ewenwan/ewenwan.github.io/blob/master/_posts/2018-06-15_kalmanfilter.md)
 
 # 10 卡尔曼滤波器
 [卡尔曼滤波](http://blog.csdn.net/heyijia0327/article/details/17487467)

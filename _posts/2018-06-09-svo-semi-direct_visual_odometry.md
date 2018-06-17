@@ -2,7 +2,7 @@
 layout: post
 title: "svo单目半直接视觉里程计"
 date: 2018-06-09 
-description: "位姿估计 深度估计"
+description: "fast角点匹配 光流匹配 单应矩阵位姿估计 直接法位姿计算 高斯均值深度滤波"
 tag: SLAM 
 ---   
 

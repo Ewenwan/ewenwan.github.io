@@ -6,6 +6,8 @@ description: "位姿估计 深度估计"
 tag: SLAM 
 ---   
 
+[本博文github地址](https://github.com/Ewenwan/MVision/blob/master/vSLAM/svo_slam/readme.md)
+
 # svo： semi-direct visual odometry 半直接视觉里程计
 
 [svo代码注释](https://github.com/Ewenwan/rpg_svo)

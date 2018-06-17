@@ -8,7 +8,9 @@ tag: SLAM
 
 # svo： semi-direct visual odometry 半直接视觉里程计
 
-[本文github链接](https://github.com/Ewenwan/MVision/tree/master/vSLAM/svo_slam)
+[svo代码注释](https://github.com/Ewenwan/rpg_svo)
+
+[SVO代码分析 较细致](https://www.cnblogs.com/hxzkh/p/8607714.html)
 
 [svo： semi-direct visual odometry 论文解析](https://blog.csdn.net/heyijia0327/article/details/51083398)
 
@@ -20,13 +22,83 @@ tag: SLAM
 
 [SVO 代码笔记](http://www.cnblogs.com/luyb/p/5773691.html)
 
+[SVO代码分析（一）结构](https://www.cnblogs.com/hxzkh/p/8607714.html)
+
 [项目主页](https://github.com/uzh-rpg/rpg_svo)
 
 [ssvo类似代码](https://github.com/kokerf/ssvo)
 
 [一步步完善视觉里程计1——项目框架搭建](http://fengbing.net/2015/08/02/%E4%B8%80%E6%AD%A5%E6%AD%A5%E5%AE%9E%E7%8E%B0%E5%8D%95%E7%9B%AE%E8%A7%86%E8%A7%89%E9%87%8C%E7%A8%8B%E8%AE%A11%E2%80%94%E2%80%94%E9%A1%B9%E7%9B%AE%E6%A1%86%E6%9E%B6%E6%90%AD%E5%BB%BA/)
 
-### 半直接法解析 
+### 1.1为什么叫半直接法？
+    我们知道，VSLAM有直接法和特征点法两大类。直接法和特征点法，在帧间VO阶段的不同在于，
+
+### 直接法：提取梯度纹理特征明显的像素，帧间VO是靠图像对齐，即通过
+
+     最小化像素灰度差函数来优化帧间位姿。
+
+### 特征点法：提取特征点（通常是角点），帧间VO靠PNP，即缩小在后帧图像上，
+
+    重投影点与特征匹配点距离误差，来优化帧间位姿。
+
+### 而SVO是这样干的：
+
+    提取稀疏特征点（类似特征点法），帧间VO用图像对齐（类似于直接法），
+    SVO结合了直接法和特征点法，因此，称它为半直接法。
+
+
+### SVO主要干了两件事，
+
+    <1>跟踪
+    <2>深度滤波
+    深度滤波是我们常说的建图（Mapping）部分。
+
+### 1.2.1跟踪部分
+    跟踪部分干的事情是：初始化位姿，估计和优化位姿(分别对应于帧间VO和局部地图优化)。
+
+### 初始化位姿：
+
+    用KLT光流法找匹配，然后恢复H矩阵。初始化思想是这样的，
+    第一帧上提取的特征点，作为关键帧，后来的帧不断用KLT与第一帧匹配，
+    直到匹配到的特征点平均视差比较大，就认为初始化成功，计算对应特征点的深度，
+    与此对应的帧作为第二帧。之后进入正常工作模式，即估计和优化位姿。
+
+### 正常工作模式：
+
+    首先，通过和上一帧进行对齐，求取初始位姿；
+    然后，建立局部地图，通过优化局部地图和当前帧的投影灰度块误差，来优化当前位姿；
+    最后，判断此帧是否是关键帧，如果为关键帧就提取新的特征点。
+    经过以上四个步骤，完成一帧的处理。如果在CMakeLists里打开了HAVE_G2O的选项，
+    代码隔一段时间还会BA,不过非常慢。
+    
+### 1.2.2深度滤波部分
+    深度滤波部分主要任务是完成估计特征点的深度信息。
+    深度滤波和跟踪部分相互依赖，因为深度滤波是以相机位姿已知为前提进行的，
+    而跟踪部分又依靠深度滤波的结果（较准确的三维点），完成位姿的估计。
+    乍一看，这是个鸡生蛋，蛋生鸡的问题，既然两者循环迭代，总得有个起始点。
+    其实，单目的slam在启动时需要初始化，而这个初始化就提供粗糙的帧间位姿，
+    以便于深度滤波和跟踪部分的迭代。
+    当深度可以用后（称之为收敛），把它放入地图里，用于跟踪。
+
+### 1.2.3为什么叫VO
+    这个得从SVO干的事来说，它既没有闭环检测，也没有重定位（SVO的重定位太。。。），
+    它干的事只要是定位,比较符合视觉里程计(VO)的特点。
+    ORBSLAM算是目前性能最好的开源算法，这些功能它都有，因此算一个比较完整的VSLAM算法。
+
+### 1.2.4 svo怎么样
+    优点：是比较快，如果你跑代码的时候发现很容易跟丢，可以修改这几个配置参数：
+    quality_min_fts：匹配到的最小特征点。
+    quality_max_drop_fts：容许相邻帧匹配到特征点的最大落差。 
+
+### 缺点：缺点是比较明显的
+    和ORBSLAM相比。
+    <1>由于位姿的估计和优化全是靠灰度匹配，这就导致了系统对光照的鲁棒性不足。
+    <2>对快速运动鲁棒性性不足。直接法都似这个样子。。可以加入IMU改善。
+    <3>没有重定位和闭环检测功能。
+    如果把此工程修改成RGBD的模式后，鲁棒性和精度明显提高，近似于ORBSLAM的RGBD模式。
+
+
+# 半直接法解析 
         SVO 从名字来看，是半直接视觉里程计，
         所谓半直接是指通过对图像中的特征点图像块进行直接匹配来获取相机位姿，
         而不像直接匹配法那样对整个图像（根据灰度梯度大小筛选需要匹配的点）使用直接匹配。
@@ -34,15 +106,15 @@ tag: SLAM
         虽然semi-direct方法使用了特征，但它的思路主要还是通过direct method来获取位姿，这和特征点法feature-method不一样。
         同时，semi-direct方法和direct method不同的是它利用特征块的配准来对direct method估计的位姿进行优化。 
         和常规的单目一样，SVO算法分成两部分: 位姿估计，深度估计
-### 直接法
+## 直接法
         使用图像中具有灰度梯度大的点 使用极线搜索(线段匹配)获得匹配点对，
         参考帧根据深度信息建立3d点，
         按照3d-2d匹配，
         将3d点按照变换矩阵以及相机内参数投影到当前帧，获取亚像素灰度值，
         和原有的匹配点做差，得到灰度差值，使用加权LM算法进行优化，得到变换矩阵[R t]。
-### 半直接法
+## 半直接法
         利用特征块的配准来对direct method估计的位姿进行优化。
-### 特征点法
+## 特征点法
         使用ORB等特征提取方法，确定两幅图像中的匹配点对(特征点快匹配)，对应同一个物理空间中的点
         使用 单应矩阵H / 或者本质矩阵F求解 变换矩阵[R t]
         2D-2D点三角化 得到对应的 三维点坐标
@@ -53,7 +125,7 @@ tag: SLAM
         式中：x1 = k逆 × p1 ，x2 = k逆 × p2 ， T= [R, t] 已知
         可以求解D 
         D是3维齐次坐标，需要除以第四个尺度因子 归一化
-# 特征点匹配
+### 特征点匹配
         在讲解恢复R,T前，稍微提一下特征点匹配的方法。
         常见的有如下两种方式： 
         1. 计算特征点，然后计算特征描述子，通过描述子来进行匹配，优点准确度高，缺点是描述子计算量大。 
@@ -129,11 +201,9 @@ tag: SLAM
                1     1        
         
         如下图所示：
-        
 ![](https://img-blog.csdn.net/20160228210635964)
 
-        由于C0、C1、P三点共面，得到：
-
+        由于C0、C1、P三点共面，得到： 
 ![](https://img-blog.csdn.net/201602282136150180)
 
          这时，由共面得到的向量方程可写成：  
@@ -150,7 +220,6 @@ tag: SLAM
                0  -a3  a2
          ax =  a3  0  -a1
               -a2  a1   0
-
 ![](https://img-blog.csdn.net/20160228220006072)
 
         所以把括号去掉的话，p0 需要变成 1*3的行向量形式
@@ -161,7 +230,7 @@ tag: SLAM
        我们把  t叉乘 * R  = E 写成
        
        p0转置 * E * P1
-       
+
 ![](https://img-blog.csdn.net/20160228221439077)
 
         本征矩阵E的性质： 
@@ -185,8 +254,7 @@ tag: SLAM
        
        对矩阵A进行奇异值SVD分解，可以得到A
 
- ### p2转置 * F * p1 =  0 8点对8个约束求解得到F
- 
+ #### p2转置 * F * p1 =  0 8点对8个约束求解得到F
 ```asm
         *                    f1   f2    f3      u1
         *   (u2 v2 1)    *   f4   f5    f6  *   v1  = 0  
@@ -237,7 +305,6 @@ tag: SLAM
         
         计算本征矩阵E的八点法，大家也可以去看看wiki的详细说明 
 ```
-
 [本征矩阵E的八点法](https://en.wikipedia.org/wiki/Eight-point_algorithm)
 
         有本质矩阵E 恢复 R,t
@@ -246,16 +313,16 @@ tag: SLAM
         由于一组R,T就决定了摄像机光心坐标系C的位姿，
         所以选择正确R、T的方式就是，把所有特征点的深度计算出来，
         看深度值是不是都大于0，深度都大于0的那组R,T就是正确的。
-
 ![](https://img-blog.csdn.net/20160229102903105)
 
 
-### 以上的解法 在 orbslam2中有很好的代码解法
+#### 以上的解法 在 orbslam2中有很好的代码解法
 [orbslam2 单目初始化 ](https://github.com/Ewenwan/MVision/blob/master/vSLAM/oRB_SLAM2/src/Initializer.cc)
 
 ### 尺度问题
-
 ![](https://img-blog.csdn.net/20160229104204048)
+
+[IMU+视觉消除尺度漂移问题](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-A21-DealingWithScale.pdf)
 
         这个图简单明了的演示了这种平移缩放作用。
         从图中也可以看出，由于尺度scale的关系，
@@ -280,9 +347,7 @@ tag: SLAM
         但是，这样计算又会产生新的问题–scale drift尺度漂移。
         因为，两帧间的位姿总会出现误差，这些误差积累以后，
         使得尺度不再统一了，
-        
         如下图所示：
- 
 ![](https://img-blog.csdn.net/20160409204419115)
 
         随着相机位姿误差的积累，地图中的四个点在第二帧的位置相对于第一帧中来说像是缩小了一样。
@@ -295,13 +360,13 @@ tag: SLAM
 
 [Stereo Visual Odometry 双目视觉里程计](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-A12-StereoVO.pdf)
 
-[BundleAdjustmen 集束优化](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-A13-BundleAdjustment.pdf)
+[BundleAdjustmen 集束优化 李群 李代数](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-A13-BundleAdjustment.pdf)
 
 [DealingWithScale 尺度问题](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-A21-DealingWithScale.pdf)
 
 [Incremental 滤波器优化 非线性最小二乘优化等](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-A22-Incremental.pdf)
 
-[LoopClosing闭环检测](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-A23-LoopClosing.pdf)
+[LoopClosing闭环检测 移动设备VSLAM](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-A23-LoopClosing.pdf)
 
 [大尺度地图高效构建](http://frc.ri.cmu.edu/~kaess/vslam_cvpr14/media/VSLAM-Tutorial-CVPR14-P11-LargeScaleEfficiency.pdf)
 
@@ -341,11 +406,16 @@ tag: SLAM
             对相机位姿(pose)以及特征点位置（structure）进行优化。
             
 ### a) 使用直接法 最小化图像块重投影残差 来获取位姿。 sparse model-based image alignment 
+[南国枫叶 SVO深度解析(二)之跟踪部分](https://www.cnblogs.com/ybj1992/p/7214314.html)
 
         如图所示：其中红色的Tk,k−1为位姿，即优化变量
-        
 ![](https://img-blog.csdn.net/20160407144619594)
 
+        其过程如下，
+        1. 找到前帧（K-1）看到的地图点p1,p2,p3，对应着2d像素点。
+        2. 使用变换关系投影至后帧（k）二维图像上，也对应着2d点。
+        3. 然后最小化灰度误差函数（这是一个最优化过程，又称图像对齐），得到位姿，over。
+        
         直接法具体过程如下： 
         step1. 准备工作。
         假设当前相邻帧之间的位姿Tk,k−1的初始值已知，
@@ -373,11 +443,9 @@ tag: SLAM
         这里使用 加权LM优化算法得到 位姿Tk,k−1。
 
         将上述过程公式化如下：通过不断优化位姿Tk,k−1Tk,k−1最小化残差损失函数。 
-
 ![](https://img-blog.csdn.net/20160407160247873)
 
         其中,2d->3d->3d->2d
-
 ![](https://img-blog.csdn.net/20160407155925247)
 
         1. 公式中第一步为根据参考帧图像特征点位置和深度逆投影到三维空间, 
@@ -409,11 +477,9 @@ tag: SLAM
         再者为了减小外点的影响，会根据投影误差的大小确定误差的权重，使用加权LM算法优化求解。
         位姿的迭代增量ξξ(李代数)可以通过下述方程计算：
         J转置 * J * se3 = -J * err 
-
 ![](https://img-blog.csdn.net/20160407161353190)
 
         其中雅克比矩阵J 为图像残差对李代数的求导，可以通过链式求导得到：
-        
 ![](https://img-blog.csdn.net/20160407161718066)    
 
         这中间最复杂的部分是位姿矩阵对李代数的求导。
@@ -425,7 +491,6 @@ tag: SLAM
         到这里，我们已经能够估计位姿了，但是这个位姿肯定不是完美的。
         导致重投影预测的特征点在Ik中的位置并不和真正的吻合，也就是还会有残差的存在。
         如下图所示：
-
 ![](https://img-blog.csdn.net/20160407165557073)
 
         图中灰色的特征块为真实位置，蓝色特征块为预测位置。
@@ -504,11 +569,9 @@ tag: SLAM
         根据这个位置误差为进一步的优化做准备。
         基于光度不变性假设，特征块在以前参考帧中的亮度(灰度值)应该和new frame中的亮度差不多。
         所以可以重新构造一个残差，对特征预测位置进行优化。
-
 ![](https://img-blog.csdn.net/20160407172225347)
 
 ![](https://img-blog.csdn.net/20160820223132238?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
-
 
         注意这里的优化变量是像素位置，这过程就是 光流法跟踪,  
         并且注意，
@@ -554,27 +617,63 @@ tag: SLAM
         最基本的深度估计就是三角化，
         这是多视角几何的基础内容(可以参看圣经Hartly的《Multiple View Geometry in Computer Vision》
         中的第十二章structure computation.
-        
-         相机归一化平面下的点  x1  x2
-        p1 = k × [R1 t1] × D       k逆 × p1 =  [R1 t1] × D     x1 = T1 × D    x1叉乘x1 =  x1叉乘T1 × D = 0
-        p2 = k × [ R2 t2]  × D     k逆 × p2 =  [R2 t2] × D     x2 = T2 × D    x2叉乘x2 =  x2叉乘T2 × D = 0      
-        式中：x1 = k逆 × p1 ，x2 = k逆 × p2 ， T= [R, t] 已知
-        可以求解D 
-        D是3维齐次坐标，需要除以第四个尺度因子 归一化.
+
+        用单应变换矩阵H或者本质矩阵E 求解得到相邻两帧的变换矩阵R,t后就可是使用类似双目的
+        三角测距原理来得到深度。
+
+![](https://img-blog.csdn.net/20160301171837557)
+
+        上图中的物理物理中的点    P =[X,Y,Z,1]
+        在两相机归一化平面下的点  x1  x2  [x,y,z]
+        在两相机像素平面上的点    p1, p2，匹配点对　[u,v,1]
+        p1 = k × [R1 t1] × P   
+        左乘　k逆 × p1 =  [R1 t1] × P   
+        得到　x1 = T1 × P   
+        计算　x1叉乘x1 =  x1叉乘T1 × P = 0
+        这里 T1 = [I, 0 0 0] 为单位矩阵。
+        p2 = k × [R2 t2]  × P    
+        左乘　k逆 × p2 =  [R2 t2] × P    
+        得到　x2 = T2 × P   
+        消去　x2叉乘x2 =  x2叉乘T2 × P = 0      
+        式中：
+         x1 = k逆 × p1 ，
+         x2 = k逆 × p2 ， 
+         T2= [R, t]为帧1变换到帧2的 已知
+        得到两个方程
+        x1叉乘T1 × P = 0
+         x2叉乘T2 × P = 0 
+         写成矩阵形式　A*P = 0
+         A = [x1叉乘T1; x2叉乘T2]
+        这又是一个要用最小二乘求解的线性方程方程组 ,和求本征矩阵一样，
+        计算矩阵A的SVD分解，然后奇异值最小的那个奇异向量就是三维坐标P的解。
+        P是3维齐次坐标，需要除以第四个尺度因子 归一化. 
+        [U,D,V] = svd(A);
+        P = V[:,4] 最后一列
+        P = P/P(4)；// 归一化
+        以上也是由本质矩阵E = t 叉乘 R 恢复变换矩阵R,t的时候，有四种情况，但是只有一种是正确的。
+        而判断正确的标准，就是按照这个R,t 计算出来的深度值都是正值，因为相机正前方为Z轴正方向。
+
 [三角法求深度（triangulation）](https://blog.csdn.net/heyijia0327/article/details/50774104)
-        
-        
+
         我们知道通过两帧图像的匹配点就可以计算出这一点的深度值，
-        如果有多幅图像，那就能计算出这一点的多个深度值。
+        如果有多幅匹配的图像，那就能计算出这一点的多个深度值。
+        一幅图像对应另外n幅图像，可以看作为n个深度传感器，
+        把得到点的深度信息的问题看作是有噪声的多传感器数据融合的问题，
+        使用Gaussian Uniform mixture model(高斯均值混合模型)来对这一问题进行建模，
+        假设好的测量值符合正态分布，好的测量值的比例为pi,
+        噪声符合均匀分布，噪声比例为1-pi 使用贝叶斯方法不断更新这个模型，
+        让点的深度（也就是正态分布中的均值参数）和好的测量值的比例pi收敛到真实值。　
+
         这就像对同一个状态变量我们进行了多次测量，
-        因此，可以用贝叶斯估计来对多个测量值进行融合，使得估计的不确定性缩小。
+        因此，可以用贝叶斯估计来对多个测量值进行融合，
+        使得估计的不确定性缩小。
         如下图所示：
 ![](https://img-blog.csdn.net/20160407222351307)     
 
         一开始深度估计的不确定性较大(浅绿色部分)，
         通过三角化得到一个深度估计值以后，
         能够极大的缩小这个不确定性(墨绿色部分)。 
-        
+
 ### 极线搜索匹配点三角化计算深度 概率方法分析图像点的深度信息
 [深度估计的思路论文 Video-based, Real-Time Multi View Stereo ](http://george-vogiatzis.org/publications/ivcj2010.pdf)
 
@@ -595,10 +694,12 @@ tag: SLAM
         像素点位置确定了，就可以三角化计算深度了。 
 
         得到一个新的深度估计值以后，用贝叶斯概率模型对深度值更新。
+        
         在LSD slam中，假设深度估计值服从高斯分布，
         用卡尔曼滤波(贝叶斯的一种)来更新深度值。
         这种假设中，他认为深度估计值效果很棒，
         很大的概率出现在真实值(高斯分布均值)附近。
+        
         而SVO的作者采用的是Vogiatzis的
         论文《Video-based, real-time multi-view stereo》提到的概率模型：
 ![](https://img-blog.csdn.net/20160407222956700)
@@ -632,23 +733,24 @@ tag: SLAM
         把上述计算过程看作是一个深度传感器的计算过程，
         其输出结果为一系列NCC的局部极值对应的点的深度信息。
         它们是有噪声的数据。
-        
+
         这个概率模型是一个 高斯分布 加上一个设定
         在最小深度dmin和最大深度dmax之间的 均匀分布。
         这个均匀分布的意义是假设会有一定的概率出现错误的深度估计值。
-        
+
         其中pi π 表示x为有效测量(高斯分布)的概率,而(1-pi)为噪声出现错误的概率
 ![](https://images2015.cnblogs.com/blog/879417/201608/879417-20160815172058250-1160761930.png)
 
         一幅图像对应另外n幅图像，可以看作为n个深度传感器，
         把得到点的深度信息的问题看作是有噪声的多传感器数据融合的问题，
-        使用Gaussian Uniform mixture model（高斯均匀混合模型,GUMM,另外GMM高斯混合模型）来对这一问题进行建模，
+        使用Gaussian Uniform mixture model
+        （高斯均匀混合模型,GUMM,另外GMM高斯混合模型）来对这一问题进行建模，
         假设好的测量值符合正态分布，
         噪声符合均匀分布，
         好的测量值的比例为pi，
         使用贝叶斯方法不断更新这个模型，
         让点的深度（也就是正态分布中的均值参数）和好的测量值的比例pi收敛到真实值。
-        
+
         实际实现的时候一个seed对应与图像中一个像素，这个像素是想要求得其深度信息的点。
         一个seed还关联五个参数，
         其中四个参数是模型中的参数:
@@ -660,7 +762,7 @@ tag: SLAM
         计算这个patch和其他图像中的对应极线上的patch的NCC值，
         此处因为计算量的关系不会搜索整个极线，只会搜索以目前模型中高斯分布的均值（深度）
         对应的极线上的像素点为中心的一个固定范围。
-        
+
         同时，有关这个概率模型递推更新的过程具体可以看Vogiatzis在论文中
         提到的Supplementary material，论文中告知了下载地址。
         知道了这个贝叶斯概率模型的递推过程，程序就可以实现深度值的融合了，
@@ -694,9 +796,9 @@ tag: SLAM
 
 # 最后，简单说下SVO的初始化过程：
         它假设前两个关键帧所拍到的特征点在一个平面上(四轴飞行棋对地面进行拍摄)，
-        然后估计单应性H矩阵，p2 = H * p1 ,恢复R，t矩阵
-        并通过三角化来估计初始特征点的深度值。
-        SVO初始化时triangulation的方法具体代码是vikit/math_utils.cpp里的triangulateFeatureNonLin()函数，
+        1. 然后估计单应性H矩阵，p2 = H * p1 ,恢复R，t矩阵
+        2. 并通过三角化来估计初始特征点的深度值。
+           SVO初始化时triangulation的方法具体代码是vikit/math_utils.cpp里的triangulateFeatureNonLin()函数，
         使用的是中点法，关于这个三角化代码算法的推导见github issue。
         还有就是SVO适用于摄像头垂直向下的情况（也就是无人机上,垂直向上也可以,朝着一面墙也可以），
         为什么呢？
@@ -705,27 +807,158 @@ tag: SLAM
         SVO中的深度滤波做的不好，这个讨论可以看看github issue，
         然而在我的测试中，不知道修改了哪些参数，稍微改动了部分代码，发现前向运动，
         并且对着非平面SVO也是很溜的。 
-        同时我也对svo的代码加了一些中文注释，后续会放到github上，希望帮助大家加快理解svo。最
+      同时我也对svo的代码加了一些中文注释，后续会放到github上，希望帮助大家加快理解svo。最
         后，祝大家好运，一起分享知识。 
         
 # SVO代码
-        SVO也是将一帧图像处理成多层图像金字塔形式，跟踪过程，也就是通过灰度残差最小来算相机位姿，这部分都在FrameHandlerMono类的addImage方法中，addImage方法完成初始化过程和相机位姿跟踪的部分，跟踪部分中存在四个系统状态：第一帧，第二帧，其他帧，relocalizing （这个状态要干什么还不是特别清楚），一二帧是初始化（算单应矩阵分解求位姿），其他帧就是有了初始地图之后的跟踪过程，具体函数为FrameHandlerMono类的processFrame函数，这个函数中的跟踪过程与论文中基本一样，也包括几个步骤：图像配准（alignment）求位姿，优化特征点的二维坐标，同时优化位姿和特征点坐标（BA）。
-        建图部分的主要函数在depthfilter类中，流程是首先在ros节点调用的时候会调用这个类的startThread函数，新开线程，线程里运行depthfiler类中的updateSeedsLoop方法，大致过程也就是等tracking部分向一个vector或者list中填充它选择的关键帧，如果有，就进行概率化建图，这个部分还没仔细看。
-        另外李群中的SE3在PTAM，SVO中都会出现，应该是表示T，相机位姿，但是感觉需要找点中文资料再看看SE3的具体含义。
+        SVO也是将一帧图像处理成多层图像金字塔形式，跟踪过程，也就是通过灰度残差最小来算相机位姿(直接法)，
+        这部分都在FrameHandlerMono类的addImage方法中，addImage方法完成初始化过程和相机位姿跟踪的部分，
+        跟踪部分中存在四个系统状态：
+        第一帧关键帧 (处理第一帧到第一个关键帧之间的，fast角点特征匹配，单应变换求取位姿变换)，
+        第二帧关键帧 (光流法金字塔多尺度跟踪上一帧，单应性矩阵求取位姿变换，局部BA优化，深度值滤波器滤波)，
+        其他帧       (上帧位姿初始值，直接法最小化重投影误差优化变换矩阵，匹配点,3d点，深度值滤波器滤波)，
+        重定位模式（relocalizing 跟踪上一帧的参考帧 ），
+        
+        一二帧是初始化（算单应矩阵分解求位姿），
+        其他帧就是有了初始地图之后的跟踪过程，具体函数为FrameHandlerMono类的processFrame函数，
+        这个函数中的跟踪过程与论文中基本一样，
+        也包括几个步骤：
+        图像配准（alignment）求位姿，
+        优化特征点的二维坐标，
+        同时优化位姿和特征点坐标（BA）。
+        
+        建图部分的主要函数在depthfilter类中，流程是首先在ros节点调用的时候会调用这个类的startThread函数，
+        新开线程，线程里运行depthfiler类中的 updateSeedsLoop方法，
+        大致过程也就是等tracking部分向一个vector或者list中填充它选择的关键帧，
+        如果有，就进行概率化建图，这个部分还没仔细看。
 
-        对应SVO论文中跟踪部分的三个过程，一是通过当前帧和上一帧的特征点对应的patch之间的灰度残差最小来求当前帧的位姿（即SE(3) T），一个函数完成，这是一个粗略估计，有了这个粗略估计就可以进行下一步：把地图中已有的在当前帧可见的特征点重投影到当前帧，一个重投影函数完成，这个重投影过程完成之后会分析重投影的质量，也就是匹配到的特征点对的个数，当点对太少的时候就会直接把当前帧的位姿设置为上一帧的位姿，并报错匹配特征点过少，这也是我常遇到的问题。最后是优化两个部分：一是之前粗略估计出的T，这一步叫做pose优化；二是投影到当前帧的点在世界坐标系下的坐标点，这一步叫做structure优化。最后是可选的BA算法同时对位姿和三维点坐标进行优化。
-
-
+        对应SVO论文中跟踪部分的三个过程，
+        一是通过当前帧和上一帧的特征点对应的patch之间的灰度残差最小来求当前帧的位姿（即SE(3) T），
+        一个函数完成，这是一个粗略估计，有了这个粗略估计就可以进行下一步：
+        把地图中已有的在当前帧可见的特征点重投影到当前帧，一个重投影函数完成，
+        这个重投影过程完成之后会分析重投影的质量，也就是匹配到的特征点对的个数，
+        当点对太少的时候就会直接把当前帧的位姿设置为上一帧的位姿，并报错匹配特征点过少，
+        这也是我常遇到的问题。
+        
+        最后是优化两个部分：
+        一是之前粗略估计出的T，这一步叫做  pose优化；
+        二是投影到当前帧的点在世界坐标系下的坐标点，这一步叫做structure优化。
+        
+        最后是可选的BA算法同时对位姿和三维点坐标进行优化。
         以下分析均在rpg_svo文件夹下：
-        first：在svo_ros/src中vo_node文件中包含了了节点类vo_node的相关声明，并包含一个main函数
+        first：在svo_ros/src中vo_node文件中包含了了节点类vo_node的相关声明，
+        并包含一个main函数
         vo_node.cpp的main中:
-        1.包含一些ros节点的基本操作，在vo_node的构造函数中，实例化了一个FrameHandlerMono的对象vo_，并运行vo_->start
-        2.使用subscribe(cam_topic, 5, &svo::VoNode::imgCb, &vo_node)，每次获得图像时使用VoNode中的imgCb方法处理
-        3.在imgCb方法中，运行了FrameHandlerMono对象vo_的成员函数addImage，此方法中其他的部分是关于显示的，即Visualizer类的一些操作。
+        1.包含一些ros节点的基本操作，在vo_node的构造函数中，
+          实例化了一个FrameHandlerMono的对象vo_，并运行vo_->start
+        2.使用subscribe(cam_topic, 5, &svo::VoNode::imgCb, &vo_node)，
+          每次获得图像时使用VoNode中的imgCb方法处理
+        3.在imgCb方法中，运行了FrameHandlerMono对象vo_的成员函数addImage，
+          此方法中其他的部分是关于显示的，即Visualizer类的一些操作。
         3.当ros::ok()为真，且vo_node.quit_为假时，循环ros::spinOnce()
 
         ----------------------------------------------------------------------------------------------
         FrameHandlerMono类继承自FrameHandlerBase类：
         1.其构造函数中运行FrameHandlerMono.initialize()
-        2.initialize()函数中实例化DepthFilter类的一个对象，运行此对象的startThread()函数，此函数使用boost的thread方法新建了一个线程，并在此线程中运行DepthFilter.updateSeedsLoop函数。
-        3.在updateSeedsLoop函数中，会检查frame_queue_队列中是否有FramePtr存在，FramePtr在global.h中定义为boost::shared_ptr
+        2.initialize()函数中实例化DepthFilter类的一个对象，
+          运行此对象的startThread()函数，此函数使用boost的thread方法新建了一个线程，
+          并在此线程中运行DepthFilter.updateSeedsLoop函数。
+        3.在updateSeedsLoop函数中，
+          会检查frame_queue_队列中是否有FramePtr存在，
+          FramePtr在global.h中定义为boost::shared_ptr
+
+# ==========frame_handler_mono.cpp ================
+    processFirstFrame(); // 作用是处理第1帧并将其设置为关键帧；
+    processSecondFrame();// 作用是处理第1帧后面所有帧，直至找到一个新的关键帧；
+    processFrame();      // 作用是处理两个关键帧之后的所有帧；
+    relocalizeFrame(=);  //作用是在相关位置重定位帧以提供关键帧
+
+    startFrameProcessingCommon(timestamp) 设置处理第一帧  stage_ = STAGE_FIRST_FRAME;
+
+    processFirstFrame(); 处理第一帧，直到找打第一个关键帧==============================================
+                    1. fast角点特征，单应变换求取位姿变换，特点点数超过100个点才设置第一帧为为关键帧，
+                    2. 计算单应性矩阵（根据前两个关键帧）来初始化位姿，3d点
+                    3. 且设置系统处理标志为第二帧 stage_ = STAGE_SECOND_FRAME
+
+    processSecondFrame(); 处理第一帧关键帧到第二帧关键帧之间的所有帧(跟踪上一帧) ========================
+                    1. 光流法 金字塔多尺度 跟踪关键点,根据跟踪的数量和阈值，做跟踪成功/失败的判断
+                    2. 前后两帧计算单应性矩阵，根据重投影误差记录内点数量，根据阈值，判断跟踪 成功/失败,计算3d点
+                    3. 集束调整优化, 非线性最小二乘优化, 
+                    4. 计算场景深度均值和最小值
+                    5. 深度滤波器对深度进行滤波，高斯均值混合模型进行更新深度值
+                    6. 设置系统状态 stage_= STAGE_DEFAULT_FRAME；
+
+    processFrame(); 处理前两个关键帧后的所有帧(跟踪上一帧) ============================================
+                    1. 设置初始位姿, 上帧的位姿初始化为当前帧的位姿
+                    2. 直接法 最小化 3d-2d 重投影 像素误差 求解位姿 LM算法优化位姿)
+                    3. 最小化 3d-2d 重投影像素误差 优化特征块的预测位置 更新3d-2d特征块匹配关系
+                    4. 使用优化后的 3d-2d特征块匹配关系， 类似直接法，最小化2d位置误差，来优化相机位姿(pose)
+                    5. 使用优化后的 3d-2d特征块匹配关系， 类似直接法，最小化2d位置误差，来优化3D点(structure)
+                    6. 深度值滤波
+
+    relocalizeFrame(); 重定位模式（跟踪参考帧）=======================================================
+                    1. 得到上一帧附近的关键帧作为参考帧 ref_keyframe
+                    2. 进行直接法 最小化 3d-2d 重投影 像素误差 求解当前帧的位姿
+                    3. 若跟踪质量较高(匹配特征点数大于30) 将参考帧设置为上一帧
+                    4. 直接法跟踪上一帧参考帧进行processFrame()处理( 其实就是跟踪参考帧模式 )
+                    5. 如果跟踪成功就设置为相应的跟踪后的位姿，否者设置为参考帧的位姿
+                    
+                    
+# 项目代码结构
+    rpg_svo
+    ├── rqt_svo       为与 显示界面 有关的功能插件
+    ├── svo           主程序文件，编译 svo_ros 时需要
+    │   ├── include
+    │   │   └── svo
+    │   │       ├── bundle_adjustment.h        光束法平差（图优化）
+    │   │       ├── config.h                   SVO的全局配置
+    │   │       ├── depth_filter.h             像素深度估计（基于概率） 高斯均值混合模型
+    │   │       ├── feature_alignment.h        特征匹配
+    │   │       ├── feature_detection.h        特征检测  faster角点
+    │   │       ├── feature.h（无对应cpp）      特征定义
+    │   │       ├── frame.h                    frame定义
+    │   │       ├── frame_handler_base.h       视觉前端基础类
+    │   │       ├── frame_handler_mono.h       单目视觉前端原理(较重要)==============================
+    │   │       ├── global.h（无对应cpp）       有关全局的一些配置
+    │   │       ├── initialization.h           单目初始化
+    │   │       ├── map.h                      地图的生成与管理
+    │   │       ├── matcher.h                  重投影匹配与极线搜索
+    │   │       ├── point.h                    3D点的定义
+    │   │       ├── pose_optimizer.h           图优化（光束法平差最优化重投影误差）
+    │   │       ├── reprojector.h              重投影
+    │   │       └── sparse_img_align.h         直接法优化位姿（最小化光度误差）
+    │   ├── src
+    │   │   ├── bundle_adjustment.cpp
+    │   │   ├── config.cpp
+    │   │   ├── depth_filter.cpp
+    │   │   ├── feature_alignment.cpp
+    │   │   ├── feature_detection.cpp
+    │   │   ├── frame.cpp
+    │   │   ├── frame_handler_base.cpp
+    │   │   ├── frame_handler_mono.cpp
+    │   │   ├── initialization.cpp
+    │   │   ├── map.cpp
+    │   │   ├── matcher.cpp
+    │   │   ├── point.cpp
+    │   │   ├── pose_optimizer.cpp
+    │   │   ├── reprojector.cpp
+    │   │   └── sparse_img_align.cpp
+    ├── svo_analysis           未知
+    ├── svo_msgs               一些配置文件，编译 svo_ros 时需要
+    └── svo_ros                为与ros有关的程序，包括 launch 文件
+         ├── CMakeLists.txt    定义ROS节点并指导rpg_svo的编译
+    ├── include
+    │   └── svo_ros
+    │    └── visualizer.h                
+    ├── launch
+    │   └── test_rig3.launch   ROS启动文件
+    ├── package.xml
+    ├── param                   摄像头等一些配置文件
+    ├── rviz_config.rviz        Rviz配置文件（启动Rviz时调用）
+    └── src
+             ├── benchmark_node.cpp
+             ├── visualizer.cpp        地图可视化
+             └── vo_node.cpp           VO主节点=======================================
+
+<br>
+*转载请注明原地址，万有文的博客：[ewenwan.github.io](https://ewenwan.github.io) 谢谢！*

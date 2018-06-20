@@ -6,6 +6,8 @@ description: "视频分析 行为分析 IDT TSN C3D CDC R-C3D"
 tag: 视频分析
 ---   
 
+[本文github地址](https://github.com/Ewenwan/MVision/blob/master/CNN/Action_Recognition/readme.md)
+
 # Video Analysis之Action Recognition(行为识别) 
     行为识别就是对时域预先分割好的序列判定其所属行为动作的类型，即“读懂行为”。 
     

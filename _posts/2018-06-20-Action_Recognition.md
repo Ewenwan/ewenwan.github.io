@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "行为分析"
-date: 2018-06-120 
+date: 2018-06-20 
 description: "视频分析 行为分析 IDT TSN C3D CDC R-C3D"
 tag: 视频分析
 ---   

@@ -1,12 +1,12 @@
 ---
 layout: post
 title: "行为分析"
-date: 2018-06-17 
+date: 2018-06-120 
 description: "视频分析 行为分析 IDT TSN C3D CDC R-C3D"
 tag: 视频分析
 ---   
 
-# Video Analysis 相关领域 之Action Recognition(行为识别)  类似图像目标识别
+# Video Analysis之Action Recognition(行为识别) 
     行为识别就是对时域预先分割好的序列判定其所属行为动作的类型，即“读懂行为”。 
     
 [[行为检测|论文解读]行为检测调研综述 较新](https://blog.csdn.net/neu_chenguangq/article/details/79504214)

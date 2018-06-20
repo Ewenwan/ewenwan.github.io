@@ -11,7 +11,7 @@ tag: 视频分析
 # Video Analysis之Action Recognition(行为识别) 
     行为识别就是对时域预先分割好的序列判定其所属行为动作的类型，即“读懂行为”。 
     
-[[行为检测|论文解读]行为检测调研综述 较新](https://blog.csdn.net/neu_chenguangq/article/details/79504214)
+[行为检测调研综述 较新](https://blog.csdn.net/neu_chenguangq/article/details/79504214)
 
 [基于Deep Learning 的视频识别技术](https://yq.aliyun.com/articles/39134)
 

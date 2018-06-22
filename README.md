@@ -13,6 +13,8 @@
 
 [另外一个较好的博客版本](https://github.com/Ewenwan/myblog)
 
+[简而不减 Hexo 双栏博客主题](https://github.com/Ewenwan/hexo-theme-yelee)
+
 ### 感谢   
 
 本博客在[slowlythinking](https://github.com/slowlythinking/slowlythinking.github.io)基础上修改。  

@@ -11,6 +11,8 @@
 如果在部署博客的时候发现问题，可以在我的[博客](https://github.com/Ewenwan/ewenwan.github.io)提问或者联系我。        
 
 
+[另外一个较好的博客版本](https://github.com/Ewenwan/myblog)
+
 ### 感谢   
 
 本博客在[slowlythinking](https://github.com/slowlythinking/slowlythinking.github.io)基础上修改。  

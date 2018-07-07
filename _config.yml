@@ -6,7 +6,8 @@ description: 欢迎来到我的个人站~
 avatarTitle: EwenWan
 # 头像里面的描述
 avatarDesc: C++/Python/机器视觉
-url: "http://wanyouwen.tech"
+# url: "http://wanyouwen.tech"
+url: "ewenwan.github.io"
 
 # Comment
 disqus_username: wanyouwen
@@ -38,7 +39,7 @@ baidu:
 #
 #
 #  _post/ 下的文章更换成你自己的文章
-#  帮忙star一下，感谢~😆 地址： https://github.com/Ewenwan/ewenwan.github.io
+#  帮忙star一下，感谢~ 地址： https://github.com/Ewenwan/ewenwan.github.io
 #
 #
 # 《--------------- 下面的信息可以自行选择是否修改 ------------------------》

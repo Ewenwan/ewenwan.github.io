@@ -1,4 +1,4 @@
-# 我的个人主页[wanyouwen.tech](http://wanyouwen.tech/)
+# 我的个人主页[wanyouwen.tech](http://wanyouwen.tech/) [ewenwan.github.io](http://ewenwan.github.io)
 
 建站相关信息请见[GitHub Pages+Jekyll搭建个人博客](http://www.weixinyu.info/2017/08/GitHub-Pages+Jekyll%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/). 
 
